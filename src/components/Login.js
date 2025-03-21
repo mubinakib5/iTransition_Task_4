@@ -12,15 +12,18 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/api/login", {
+      const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
       });
+
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");
       toast.success("Login successful");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Login failed");
+      const errorMessage = err.response?.data?.error || "Login failed";
+      toast.error(errorMessage);
+      console.error("Login error:", err.response?.data);
     }
   };
 

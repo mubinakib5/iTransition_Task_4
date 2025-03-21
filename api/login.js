@@ -17,32 +17,54 @@ module.exports = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    // Log incoming request
+    console.log("Login attempt for:", email);
 
-    if (!user.rows[0]) {
-      return res.status(400).json({ error: "User not found" });
+    const userResult = await pool.query(
+      "SELECT id, email, password, status FROM users WHERE email = $1",
+      [email]
+    );
+
+    // Log query result
+    console.log("User found:", userResult.rows.length > 0);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    if (user.rows[0].status === "blocked") {
+    const user = userResult.rows[0];
+
+    if (user.status === "blocked") {
       return res.status(403).json({ error: "Account is blocked" });
     }
 
-    const validPassword = await bcrypt.compare(password, user.rows[0].password);
+    const validPassword = await bcrypt.compare(password, user.password);
+
     if (!validPassword) {
-      return res.status(400).json({ error: "Invalid password" });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    // Update last login time
     await pool.query(
       "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1",
-      [user.rows[0].id]
+      [user.id]
     );
 
-    const token = jwt.sign({ userId: user.rows[0].id }, process.env.JWT_SECRET);
-    res.status(200).json({ token });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ error: "Server error" });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
+
+    return res.status(200).json({
+      token,
+      message: "Login successful",
+    });
+  } catch (error) {
+    // Log the actual error
+    console.error("Login error:", error);
+    return res.status(500).json({
+      error: "Server error",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
