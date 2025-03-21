@@ -12,8 +12,17 @@ import {
   Button,
   IconButton,
   Typography,
+  TextField,
+  MenuItem,
+  Box,
 } from "@mui/material";
-import { Block, LockOpen, Delete } from "@mui/icons-material";
+import {
+  Block,
+  LockOpen,
+  Delete,
+  CheckCircle,
+  Cancel,
+} from "@mui/icons-material";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +30,7 @@ import { useNavigate } from "react-router-dom";
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
   const fetchUsers = async () => {
@@ -41,9 +51,14 @@ const UserList = () => {
     fetchUsers();
   }, []);
 
+  const filteredUsers = users.filter((user) => {
+    if (filter === "all") return true;
+    return user.status === filter;
+  });
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(users.map((user) => user.id));
+      setSelected(filteredUsers.map((user) => user.id));
     } else {
       setSelected([]);
     }
@@ -96,28 +111,43 @@ const UserList = () => {
 
   return (
     <Paper sx={{ width: "100%", mb: 2 }}>
-      <Toolbar>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => handleAction("block")}
-          disabled={!selected.length}
-          startIcon={<Block />}
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleAction("block")}
+            disabled={!selected.length}
+            startIcon={<Block />}
+          >
+            Block
+          </Button>
+          <IconButton
+            onClick={() => handleAction("unblock")}
+            disabled={!selected.length}
+            title="Unblock"
+          >
+            <LockOpen />
+          </IconButton>
+          <IconButton
+            onClick={() => handleAction("delete")}
+            disabled={!selected.length}
+            title="Delete"
+          >
+            <Delete />
+          </IconButton>
+        </Box>
+        <TextField
+          select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          sx={{ width: 200 }}
+          size="small"
         >
-          Block
-        </Button>
-        <IconButton
-          onClick={() => handleAction("unblock")}
-          disabled={!selected.length}
-        >
-          <LockOpen />
-        </IconButton>
-        <IconButton
-          onClick={() => handleAction("delete")}
-          disabled={!selected.length}
-        >
-          <Delete />
-        </IconButton>
+          <MenuItem value="all">All Users</MenuItem>
+          <MenuItem value="active">Active</MenuItem>
+          <MenuItem value="blocked">Blocked</MenuItem>
+        </TextField>
       </Toolbar>
       <TableContainer>
         <Table>
@@ -126,7 +156,7 @@ const UserList = () => {
               <TableCell padding="checkbox">
                 <Checkbox
                   onChange={handleSelectAll}
-                  checked={selected.length === users.length}
+                  checked={selected.length === filteredUsers.length}
                 />
               </TableCell>
               <TableCell>Name</TableCell>
@@ -136,20 +166,60 @@ const UserList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
+            {filteredUsers.map((user) => (
+              <TableRow
+                key={user.id}
+                sx={{
+                  opacity: user.status === "blocked" ? 0.6 : 1,
+                }}
+              >
                 <TableCell padding="checkbox">
                   <Checkbox
                     checked={selected.indexOf(user.id) !== -1}
                     onChange={() => handleSelect(user.id)}
                   />
                 </TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Typography
+                    sx={{
+                      textDecoration:
+                        user.status === "blocked" ? "line-through" : "none",
+                    }}
+                  >
+                    {user.name}
+                  </Typography>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    textDecoration:
+                      user.status === "blocked" ? "line-through" : "none",
+                  }}
+                >
+                  {user.email}
+                </TableCell>
                 <TableCell>
                   {new Date(user.last_login).toLocaleString()}
                 </TableCell>
-                <TableCell>{user.status}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {user.status === "active" ? (
+                      <CheckCircle color="success" />
+                    ) : (
+                      <Cancel color="error" />
+                    )}
+                    <Typography
+                      sx={{
+                        color:
+                          user.status === "active"
+                            ? "success.main"
+                            : "error.main",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {user.status}
+                    </Typography>
+                  </Box>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
