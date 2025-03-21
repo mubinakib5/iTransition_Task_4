@@ -3,6 +3,7 @@ import { TextField, Button, Box, Typography, Link } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import API_URL from "../config";
 
 const Login = () => {
   const [email, setEmail] = useState("");
