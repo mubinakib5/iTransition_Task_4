@@ -38,18 +38,28 @@ const UserList = () => {
 
   const fetchUsers = useCallback(async () => {
     try {
+      console.log("Fetching users...");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       const response = await axios.get(`${API_URL}/users`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
+
+      console.log("Users fetched:", response.data);
       setUsers(response.data);
     } catch (err) {
+      console.error("Fetch error:", err.response || err);
       if (err.response?.status === 401) {
         navigate("/login");
       }
-      toast.error("Failed to fetch users");
+      toast.error(err.response?.data?.error || "Failed to fetch users");
     }
   }, [navigate]);
 
