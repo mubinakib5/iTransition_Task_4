@@ -26,7 +26,8 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useCallback } from "react";
+// Remove this duplicate import
+// import { useCallback } from "react";
 import API_URL from "../config";
 
 const UserList = () => {
