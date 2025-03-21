@@ -28,7 +28,7 @@ Before running this application, make sure you have the following installed:
 1. Install dependencies:
 ```bash
 npm install
-````
+```
 
 2. Set up the database:
 
@@ -135,3 +135,4 @@ The main changes made:
 - Added correct database initialization command
 - Corrected server startup commands
 ```
+````
