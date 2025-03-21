@@ -35,10 +35,13 @@ const UserList = () => {
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/users", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      const response = await axios.get(`${API_URL}/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
       });
       setUsers(response.data);
     } catch (err) {
@@ -46,8 +49,9 @@ const UserList = () => {
         navigate("/login");
       }
       toast.error("Failed to fetch users");
+      console.error("Fetch users error:", err);
     }
-  }, [navigate]);
+  };
 
   useEffect(() => {
     fetchUsers();
