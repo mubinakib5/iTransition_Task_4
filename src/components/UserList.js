@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -35,7 +35,7 @@ const UserList = () => {
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/users`, {
         headers: {
@@ -49,9 +49,8 @@ const UserList = () => {
         navigate("/login");
       }
       toast.error("Failed to fetch users");
-      console.error("Fetch users error:", err);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchUsers();
