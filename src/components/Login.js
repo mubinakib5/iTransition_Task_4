@@ -13,18 +13,29 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!email || !password) {
+        toast.error("Please fill in all fields");
+        return;
+      }
+
+      console.log("Attempting login with:", email);
       const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
       });
 
-      localStorage.setItem("token", response.data.token);
-      navigate("/dashboard");
-      toast.success("Login successful");
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        toast.success("Login successful");
+        navigate("/dashboard");
+      } else {
+        toast.error("Invalid response from server");
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.error || "Login failed";
+      console.error("Login error:", err);
+      const errorMessage =
+        err.response?.data?.error || err.message || "Login failed";
       toast.error(errorMessage);
-      console.error("Login error:", err.response?.data);
     }
   };
 

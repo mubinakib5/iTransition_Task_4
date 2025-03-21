@@ -14,19 +14,18 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
   try {
-    const { email, password } = req.body;
-
-    // Log incoming request
-    console.log("Login attempt for:", email);
-
+    // Check if user exists
     const userResult = await pool.query(
-      "SELECT id, email, password, status FROM users WHERE email = $1",
+      "SELECT * FROM users WHERE email = $1",
       [email]
     );
-
-    // Log query result
-    console.log("User found:", userResult.rows.length > 0);
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -34,37 +33,31 @@ module.exports = async (req, res) => {
 
     const user = userResult.rows[0];
 
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Check if user is blocked
     if (user.status === "blocked") {
       return res.status(403).json({ error: "Account is blocked" });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
-
-    if (!validPassword) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    // Update last login time
+    // Update last login
     await pool.query(
       "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1",
       [user.id]
     );
 
+    // Generate token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
 
-    return res.status(200).json({
-      token,
-      message: "Login successful",
-    });
+    return res.status(200).json({ token });
   } catch (error) {
-    // Log the actual error
     console.error("Login error:", error);
-    return res.status(500).json({
-      error: "Server error",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    return res.status(500).json({ error: "Server error" });
   }
 };
