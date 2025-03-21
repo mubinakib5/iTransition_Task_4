@@ -26,6 +26,7 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 import API_URL from "../config";
 
 const UserList = () => {
@@ -34,9 +35,9 @@ const UserList = () => {
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/users`, {
+      const response = await axios.get("http://localhost:5000/api/users", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setUsers(response.data);
@@ -46,11 +47,11 @@ const UserList = () => {
       }
       toast.error("Failed to fetch users");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter((user) => {
     if (filter === "all") return true;
