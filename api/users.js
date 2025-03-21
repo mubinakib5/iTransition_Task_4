@@ -9,7 +9,8 @@ const pool = new Pool({
 });
 
 module.exports = async (req, res) => {
-  // Enable CORS
+  // Handle CORS
+  res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
@@ -20,28 +21,47 @@ module.exports = async (req, res) => {
 
   if (req.method === "GET") {
     try {
+      // Verify token
       const authHeader = req.headers.authorization;
       if (!authHeader) {
         return res.status(401).json({ error: "No token provided" });
       }
 
-      const token = authHeader.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const token = authHeader.replace("Bearer ", "");
 
-      if (!decoded) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded) {
+          return res.status(401).json({ error: "Invalid token" });
+        }
+      } catch (tokenError) {
+        console.error("Token verification error:", tokenError);
         return res.status(401).json({ error: "Invalid token" });
       }
 
-      const result = await pool.query(
-        "SELECT id, name, email, last_login, status, created_at FROM users ORDER BY created_at DESC"
-      );
-
-      return res.status(200).json(result.rows);
-    } catch (err) {
-      console.error("Get users error:", err);
-      return res
-        .status(500)
-        .json({ error: "Server error", details: err.message });
+      // Fetch users
+      try {
+        const result = await pool.query(
+          "SELECT id, name, email, last_login, status, created_at FROM users"
+        );
+        return res.status(200).json(result.rows);
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        return res.status(500).json({
+          error: "Database error",
+          details:
+            process.env.NODE_ENV === "development"
+              ? dbError.message
+              : undefined,
+        });
+      }
+    } catch (error) {
+      console.error("General error:", error);
+      return res.status(500).json({
+        error: "Server error",
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
   }
 
