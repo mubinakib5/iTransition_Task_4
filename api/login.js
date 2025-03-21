@@ -14,50 +14,27 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
-  }
-
   try {
-    // Check if user exists
-    const userResult = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
+    const { email, password } = req.body;
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
-    if (userResult.rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const user = userResult.rows[0];
+    const user = result.rows[0];
+    const validPassword = await bcrypt.compare(password, user.password);
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
+    if (!validPassword) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Check if user is blocked
-    if (user.status === "blocked") {
-      return res.status(403).json({ error: "Account is blocked" });
-    }
-
-    // Update last login
-    await pool.query(
-      "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1",
-      [user.id]
-    );
-
-    // Generate token
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
-
-    return res.status(200).json({ token });
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ error: "Server error" });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+    res.status(200).json({ token });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };

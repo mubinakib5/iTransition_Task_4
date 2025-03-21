@@ -1,6 +1,6 @@
 const API_URL =
   process.env.NODE_ENV === "production"
-    ? "https://your-vercel-deployment-url/api"
-    : "http://localhost:3000/api";
+    ? "https://i-transition-task-4.vercel.app/api"
+    : "http://localhost:5000/api";
 
 export default API_URL;
