@@ -1,13 +1,11 @@
 const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 
-// Create a new pool with specific SSL configuration for Neon
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false,
-    require: true,
-  },
+    rejectUnauthorized: false
+  }
 });
 
 module.exports = async (req, res) => {
@@ -24,10 +22,8 @@ module.exports = async (req, res) => {
   if (req.method === "GET") {
     let client;
     try {
-      // Test database connection first
       client = await pool.connect();
-      console.log("Database connected successfully");
-
+      
       // Verify token
       const authHeader = req.headers.authorization;
       if (!authHeader) {
@@ -61,30 +57,35 @@ module.exports = async (req, res) => {
 
       // Fetch users with error logging
       try {
-        const result = await client.query(
-          "SELECT id, name, email, last_login, status, created_at FROM users"
-        );
-        console.log(`Successfully fetched ${result.rows.length} users`);
-        return res.status(200).json(result.rows);
-      } catch (queryError) {
-        console.error("Query error:", queryError);
-        return res.status(500).json({
-          error: "Query error",
-          details: queryError.message,
+        // Simplified query with error handling
+        const result = await client.query({
+          text: 'SELECT id, name, email, last_login, status, created_at FROM users ORDER BY created_at DESC',
+          rowMode: 'array'
         });
-      }
-    } catch (error) {
-      console.error("Connection error:", error);
-      return res.status(500).json({
-        error: "Database connection error",
-        details: error.message,
-      });
-    } finally {
-      if (client) {
-        client.release();
+
+        // Log the result for debugging
+        console.log('Query executed successfully');
+        console.log('Number of rows:', result.rowCount);
+
+        return res.status(200).json(result.rows);
+      } catch (error) {
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        
+        return res.status(500).json({
+          error: "Database error",
+          message: error.message,
+          code: error.code
+        });
+      } finally {
+        if (client) {
+          await client.release();
+        }
       }
     }
-  }
 
-  return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
 };
