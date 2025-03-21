@@ -26,6 +26,7 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import API_URL from "../config";
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -35,7 +36,7 @@ const UserList = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/users", {
+      const response = await axios.get(`${API_URL}/users`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setUsers(response.data);
@@ -83,13 +84,13 @@ const UserList = () => {
   const handleAction = async (action) => {
     try {
       if (action === "delete") {
-        await axios.delete("http://localhost:5000/api/users", {
+        await axios.delete(`${API_URL}/users`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           data: { userIds: selected },
         });
       } else {
         await axios.post(
-          "http://localhost:5000/api/users/status",
+          `${API_URL}/users/status`,
           {
             userIds: selected,
             status: action === "block" ? "blocked" : "active",
